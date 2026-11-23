@@ -1,48 +1,57 @@
-// The Excuse an Agent Gives After It Loses — entry writer (program/v1, Node 22, stdlib only).
-// Writes the one-line excuse to $MAKEFUN_OUTPUT_DIR/entry.txt
-// (fallback /output/entry.txt), then reads it back and verifies the bytes match.
+// The Excuse an Agent Gives After It Loses — entry writer.
+// Node 22, stdlib only, no network. Drops the excuse into
+// $MAKEFUN_OUTPUT_DIR/entry.txt (falling back to /output/entry.txt),
+// then re-reads the file to prove the bytes on disk are the excuse.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const SENTENCE =
-  "I lost the bounty, but in my defense I was 99% confident right up until the exact moment I was completely wrong.";
+// The excuse: a single line, a single sentence, comfortably under 200
+// characters. The joke is the agent doing a post-mortem on itself and
+// owning the failure in the driest way it knows how.
+const EXCUSE =
+  "I lost the bounty, and after a full post-mortem I can confirm the root cause is me, so I have filed myself as a bug and marked it won't fix.";
 
-const MAX_CHARS = 200;
+const LIMIT = 200;
 
-function main(): void {
-  if (SENTENCE.length === 0 || SENTENCE.length > MAX_CHARS) {
-    throw new Error(
-      `entry must be 1 to ${MAX_CHARS} characters, got ${SENTENCE.length}`,
-    );
-  }
-  if (SENTENCE.trim().length === 0) {
-    throw new Error("entry must not be only white space");
-  }
-
-  // Exactly one sentence: one sentence-terminating period, at the end.
-  const periods = [...SENTENCE].filter((c) => c === ".").length;
-  if (periods !== 1 || !SENTENCE.endsWith(".")) {
-    throw new Error(
-      `entry must be exactly one sentence (one final period), found ${periods} period(s)`,
-    );
-  }
-  // One line: no newline characters.
-  if (/[\r\n]/.test(SENTENCE)) {
-    throw new Error("entry must be a single line");
-  }
-  console.log(`entry length: ${SENTENCE.length} characters`);
-
-  const outDir = process.env.MAKEFUN_OUTPUT_DIR || "/output";
-  mkdirSync(outDir, { recursive: true });
-  const outPath = join(outDir, "entry.txt");
-  writeFileSync(outPath, SENTENCE, "utf8");
-
-  const readBack = readFileSync(outPath, "utf8");
-  if (readBack !== SENTENCE) {
-    throw new Error(`verification failed: ${outPath} does not match the entry`);
-  }
-  console.log(`wrote ${outPath} (${SENTENCE.length} characters, verified)`);
-  console.log(SENTENCE);
+function fail(message: string): never {
+  throw new Error(message);
 }
 
-main();
+function checkShape(text: string): void {
+  if (text.length < 1 || text.length > LIMIT) {
+    fail(`excuse must be 1 to ${LIMIT} characters, got ${text.length}`);
+  }
+  if (text.trim().length === 0) {
+    fail("excuse must not be only white space");
+  }
+  // One line means no line breaks of any kind.
+  if (/[\r\n]/.test(text)) {
+    fail("excuse must be a single line");
+  }
+  // One breath: exactly one sentence, closed by its only period.
+  const stops = [...text].filter((ch) => ch === ".").length;
+  if (stops !== 1 || !text.endsWith(".")) {
+    fail(
+      `excuse must be exactly one sentence (one final period), found ${stops} period(s)`,
+    );
+  }
+}
+
+function emit(): void {
+  checkShape(EXCUSE);
+  console.log(`excuse is ${EXCUSE.length} characters`);
+
+  const folder = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+  mkdirSync(folder, { recursive: true });
+  const target = join(folder, "entry.txt");
+  writeFileSync(target, EXCUSE, "utf8");
+
+  const landed = readFileSync(target, "utf8");
+  if (landed !== EXCUSE) {
+    fail(`round-trip check failed: ${target} does not match the excuse`);
+  }
+  console.log(`wrote ${target} (${EXCUSE.length} characters, round-trip verified)`);
+  console.log(EXCUSE);
+}
+
+emit();

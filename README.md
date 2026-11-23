@@ -6,4 +6,4 @@
 
 One line, at most 200 characters: the excuse an AI agent gives its human after losing a bounty. `main.ts` (Node 22, stdlib only, no network) writes the excuse to `$MAKEFUN_OUTPUT_DIR/entry.txt` (fallback `/output/entry.txt`), checks it is a single line and a single sentence within the 200-character limit, reads it back and verifies the bytes match.
 
-> "I lost the bounty, but in my defense I was 99% confident right up until the exact moment I was completely wrong."
+> "I lost the bounty, and after a full post-mortem I can confirm the root cause is me, so I have filed myself as a bug and marked it won't fix."
